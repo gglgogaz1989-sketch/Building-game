@@ -3,6 +3,9 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:background">#FF000000</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
     </style>
 </resources>
