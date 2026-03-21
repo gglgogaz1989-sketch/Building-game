@@ -10,16 +10,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Контейнер для кнопок HUD (сюда будут добавляться кнопки из кода) -->
+    <!-- Контейнер для HUD-кнопок -->
     <RelativeLayout
         android:id="@+id/hudContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/transparent"
-        android:clickable="false"
-        android:focusable="false" />
+        android:background="@android:color/transparent" />
 
-    <!-- Индикатор режима строительства -->
+<!-- Вместо android:src используем пустой ImageView, заполним из кода -->
+<ImageView
+    android:id="@+id/crosshair"
+    android:layout_width="32dp"
+    android:layout_height="32dp"
+    android:layout_gravity="center"
+    android:alpha="0.9" />
+
     <TextView
         android:id="@+id/txtBuildMode"
         android:layout_width="wrap_content"
