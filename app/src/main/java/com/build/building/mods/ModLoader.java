@@ -24,35 +24,92 @@ public class ModLoader {
     }
     
     /**
-     * Загрузка мода из JSON (из assets)
+     * Загрузка всех встроенных модов из assets/mods/
      */
-    public Mod loadModFromAssets(String assetPath) {
+    public List<Mod> loadAllBuiltInMods() {
+        List<Mod> mods = new ArrayList<>();
+        
         try {
-            InputStream is = context.getAssets().open(assetPath);
-            return loadModFromStream(is, assetPath);
+            String[] modFolders = context.getAssets().list("mods");
+            if (modFolders != null) {
+                for (String folder : modFolders) {
+                    Mod mod = loadBuiltInMod(folder);
+                    if (mod != null) {
+                        mods.add(mod);
+                    }
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        
+        // Встроенный мод "Улучшение ботов" (если нет папки)
+        if (mods.isEmpty()) {
+            Mod enhancedMod = new Mod("enhanced_bots", "Улучшение ботов", "1.0", "Built-in");
+            enhancedMod.setDescription("Зомби становятся умнее: ломают блоки, открывают двери");
+            enhancedMod.setBuiltIn(true);
+            enhancedMod.setLoaded(true);
+            enhancedMod.setDetailsLoaded(true);
+            mods.add(enhancedMod);
+        }
+        
+        return mods;
+    }
+    
+    /**
+     * Загрузка одного встроенного мода из assets/mods/название/
+     */
+    public Mod loadBuiltInMod(String modFolderName) {
+        try {
+            String manifestPath = "mods/" + modFolderName + "/mod.json";
+            InputStream is = context.getAssets().open(manifestPath);
+            return loadModFromStream(is, modFolderName, true);
+        } catch (Exception e) {
             return null;
         }
     }
     
     /**
-     * Загрузка мода из файла (импортированный)
+     * Загрузка пользовательского мода из папки files/mods/название/
      */
-    public Mod loadModFromFile(File jsonFile) {
+    public Mod loadUserMod(File modFolder) {
         try {
-            FileInputStream fis = new FileInputStream(jsonFile);
-            return loadModFromStream(fis, jsonFile.getAbsolutePath());
+            File manifestFile = new File(modFolder, "mod.json");
+            if (!manifestFile.exists()) return null;
+            
+            FileInputStream fis = new FileInputStream(manifestFile);
+            return loadModFromStream(fis, modFolder.getAbsolutePath(), false);
         } catch (Exception e) {
-            e.printStackTrace();
             return null;
         }
     }
     
     /**
-     * Загрузка мода из InputStream
+     * Загрузка всех пользовательских модов из files/mods/
      */
-    private Mod loadModFromStream(InputStream is, String sourcePath) {
+    public List<Mod> loadAllUserMods() {
+        List<Mod> mods = new ArrayList<>();
+        File modsDir = new File(context.getFilesDir(), "mods");
+        
+        if (modsDir.exists()) {
+            File[] folders = modsDir.listFiles(File::isDirectory);
+            if (folders != null) {
+                for (File folder : folders) {
+                    Mod mod = loadUserMod(folder);
+                    if (mod != null) {
+                        mods.add(mod);
+                    }
+                }
+            }
+        }
+        
+        return mods;
+    }
+    
+    /**
+     * Основная загрузка из InputStream
+     */
+    private Mod loadModFromStream(InputStream is, String sourcePath, boolean isBuiltIn) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
             StringBuilder sb = new StringBuilder();
@@ -64,14 +121,19 @@ public class ModLoader {
             
             JsonObject json = JsonParser.parseString(sb.toString()).getAsJsonObject();
             
-            // Базовая информация
             String modId = json.get("modId").getAsString();
             String name = json.get("name").getAsString();
             String version = json.get("version").getAsString();
             String author = json.get("author").getAsString();
             
             Mod mod = new Mod(modId, name, version, author);
-            mod.setManifestPath(sourcePath);
+            mod.setBuiltIn(isBuiltIn);
+            
+            if (isBuiltIn) {
+                mod.setModFolderPath("mods/" + sourcePath);
+            } else {
+                mod.setModFolderPath(sourcePath);
+            }
             
             if (json.has("description")) {
                 mod.setDescription(json.get("description").getAsString());
@@ -123,22 +185,8 @@ public class ModLoader {
                 });
             }
             
-            // Загрузка поведения (скриптов)
-            if (json.has("behavior")) {
-                JsonObject behaviorJson = json.get("behavior").getAsJsonObject();
-                Mod.ModBehavior behavior = new Mod.ModBehavior();
-                if (behaviorJson.has("script")) {
-                    behavior.scriptPath = behaviorJson.get("script").getAsString();
-                }
-                if (behaviorJson.has("class")) {
-                    behavior.className = behaviorJson.get("class").getAsString();
-                }
-                if (behaviorJson.has("parameters")) {
-                    behavior.parameters = gson.fromJson(behaviorJson.get("parameters"), 
-                                                         new com.google.gson.reflect.TypeToken<java.util.HashMap<String, Object>>(){}.getType());
-                }
-                mod.setBehavior(behavior);
-            }
+            mod.setDetailsLoaded(true);
+            mod.setLoaded(true);
             
             return mod;
             
@@ -147,21 +195,4 @@ public class ModLoader {
             return null;
         }
     }
-    
-    /**
-     * Получение списка всех встроенных модов
-     */
-    public List<Mod> loadBuiltInMods() {
-        List<Mod> mods = new ArrayList<>();
-        
-        // Встроенный мод "Улучшение ботов"
-        Mod enhancedBotsMod = new Mod("enhanced_bots", "Улучшение ботов", "1.0", "Built-in", true);
-        enhancedBotsMod.setDescription("Зомби становятся умнее: ломают блоки, открывают двери, меняют структуры");
-        enhancedBotsMod.setEnabled(true);
-        enhancedBotsMod.setLoaded(true);
-        
-        mods.add(enhancedBotsMod);
-        
-        return mods;
-    }
-        }
+                        }
