@@ -12,48 +12,22 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    signingConfigs {
-        release {
-            if (project.hasProperty('keystore.properties')) {
-                Properties props = new Properties()
-                props.load(new FileInputStream(rootProject.file("keystore.properties")))
-                storeFile file(props['storeFile'])
-                storePassword props['storePassword']
-                keyAlias props['keyAlias']
-                keyPassword props['keyPassword']
-            }
-        }
-        debug {
-            storeFile file("debug.keystore")
-        }
     }
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            if (project.hasProperty('keystore.properties')) {
-                signingConfig signingConfigs.release
-            }
         }
         debug {
             minifyEnabled false
             debuggable true
-            signingConfig signingConfigs.debug
         }
     }
     
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
-    }
-    
-    buildFeatures {
-        viewBinding true
     }
 }
 
