@@ -1,5 +1,6 @@
 package com.build.building.mods;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,6 +11,9 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+
+import com.build.building.R;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -53,7 +57,6 @@ public class LazyModListAdapter extends BaseAdapter {
             for (int i = start; i < end; i++) {
                 Mod mod = allMods.get(i);
                 
-                // Ленивая загрузка деталей (только когда нужны)
                 if (!mod.hasDetailsLoaded()) {
                     try {
                         Thread.sleep(30);
@@ -71,7 +74,9 @@ public class LazyModListAdapter extends BaseAdapter {
             hasMore = end < allMods.size();
             isLoading = false;
             
-            ((Activity) context).runOnUiThread(() -> notifyDataSetChanged());
+            if (context instanceof Activity) {
+                ((Activity) context).runOnUiThread(() -> notifyDataSetChanged());
+            }
         });
     }
     
@@ -137,9 +142,14 @@ public class LazyModListAdapter extends BaseAdapter {
         holder.name.setText(mod.getName());
         holder.version.setText("v" + mod.getVersion());
         holder.author.setText(mod.getAuthor());
-        holder.description.setText(mod.getDescription() != null ? mod.getDescription() : "Нет описания");
         
-        // Загрузка иконки
+        String description = mod.getDescription();
+        if (description != null && !description.isEmpty()) {
+            holder.description.setText(description);
+        } else {
+            holder.description.setText("Нет описания");
+        }
+        
         loadIconAsync(mod, holder.icon);
         
         holder.enabledSwitch.setChecked(mod.isEnabled());
@@ -147,7 +157,6 @@ public class LazyModListAdapter extends BaseAdapter {
             modManager.setModEnabled(mod.getModId(), isChecked);
         });
         
-        // Предзагрузка следующей страницы
         if (position >= getCount() - 3) {
             preloadNextPage();
         }
@@ -160,7 +169,7 @@ public class LazyModListAdapter extends BaseAdapter {
             Bitmap icon = null;
             
             try {
-                if (mod.getIconPath() != null) {
+                if (mod.getIconPath() != null && !mod.getIconPath().isEmpty()) {
                     if (mod.isBuiltIn()) {
                         InputStream is = context.getAssets().open(mod.getIconPath());
                         icon = BitmapFactory.decodeStream(is);
@@ -172,16 +181,20 @@ public class LazyModListAdapter extends BaseAdapter {
                         }
                     }
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             
             final Bitmap finalIcon = icon;
-            ((Activity) context).runOnUiThread(() -> {
-                if (finalIcon != null) {
-                    imageView.setImageBitmap(finalIcon);
-                } else {
-                    imageView.setImageResource(android.R.drawable.ic_menu_info_details);
-                }
-            });
+            if (context instanceof Activity) {
+                ((Activity) context).runOnUiThread(() -> {
+                    if (finalIcon != null) {
+                        imageView.setImageBitmap(finalIcon);
+                    } else {
+                        imageView.setImageResource(android.R.drawable.ic_menu_info_details);
+                    }
+                });
+            }
         });
     }
     
@@ -201,4 +214,4 @@ public class LazyModListAdapter extends BaseAdapter {
         TextView description;
         Switch enabledSwitch;
     }
-    }
+}
